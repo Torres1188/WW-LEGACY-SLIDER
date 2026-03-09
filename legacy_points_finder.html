@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Legacy Points Finder</title>
+  <style>
+    :root {
+      --paper: #f6f1e7;
+      --ink: #222;
+      --muted: #6a6a6a;
+      --line: #bdb4a5;
+      --panel: #fffdf8;
+      --blue: #1849b7;
+      --orange: #d98a17;
+      --green: #1e8a49;
+      --accent: #202020;
+      --shadow: 0 10px 30px rgba(0,0,0,.08);
+      --radius: 18px;
+      --stage-h: 560px;
+      --stage-top: 42px;
+      --stage-bottom: 38px;
+      --usable-stage: calc(var(--stage-h) - var(--stage-top) - var(--stage-bottom));
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #f2ede3 0%, #ece4d6 100%);
+      color: var(--ink);
+    }
+
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 26px 18px 40px;
+    }
+
+    .app {
+      background: var(--paper);
+      border: 1px solid #d8cfbf;
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 26px 26px 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,.5), rgba(255,255,255,.1));
+      border-bottom: 1px solid #e0d6c5;
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(28px, 3vw, 42px);
+      line-height: 1.05;
+      letter-spacing: -.03em;
+    }
+
+    .sub {
+      max-width: 900px;
+      margin: 0;
+      color: #474747;
+      line-height: 1.5;
+      font-size: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 22px;
+      padding: 22px;
+    }
+
+    .panel {
+      background: rgba(255,255,255,.54);
+      border: 1px solid #ddd3c3;
+      border-radius: 22px;
+      padding: 18px;
+    }
+
+    .panel h2 {
+      margin: 0 0 14px;
+      font-size: 18px;
+      letter-spacing: -.02em;
+    }
+
+    .control {
+      margin-bottom: 14px;
+      padding: 14px;
+      border-radius: 18px;
+      background: #fffdf9;
+      border: 1px solid #e2d8c7;
+    }
+
+    .label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .num-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      color: #fff;
+      font-size: 20px;
+      font-weight: 700;
+      flex: 0 0 auto;
+    }
+
+    .num-pill.blue { background: var(--blue); }
+    .num-pill.orange { background: var(--orange); }
+    .num-pill.green { background: var(--green); }
+
+    .control-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 16px;
+    }
+
+    .control small {
+      display: block;
+      color: var(--muted);
+      line-height: 1.35;
+      margin-top: 8px;
+      font-size: 12px;
+    }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr 92px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #3f3f3f;
+      cursor: pointer;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      border: 1px solid #cfc4b3;
+      background: #fff;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 15px;
+    }
+
+    .result-card {
+      background: linear-gradient(180deg, #fff, #f8f4ec);
+      border: 1px solid #ddd1bd;
+      border-radius: 20px;
+      padding: 18px;
+      margin-top: 16px;
+    }
+
+    .result-title {
+      font-size: 13px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .result-value {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .result-value .big {
+      font-size: 64px;
+      font-weight: 800;
+      letter-spacing: -.04em;
+      line-height: .95;
+    }
+
+    .result-value .word {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .formula {
+      font-size: 13px;
+      color: #494949;
+      line-height: 1.5;
+      margin-top: 8px;
+    }
+
+    .mini-grid {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .mini {
+      background: #fff;
+      border: 1px solid #e2d8c7;
+      border-radius: 16px;
+      padding: 12px;
+    }
+
+    .mini .k {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .mini .v {
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .notes {
+      margin-top: 14px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: #505050;
+    }
+
+    .examples {
+      margin-top: 16px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .example {
+      padding: 12px 14px;
+      background: #fff;
+      border: 1px solid #e2d8c7;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .stage-panel {
+      padding: 18px 18px 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.68), rgba(255,255,255,.42));
+      border: 1px solid #ddd3c3;
+      border-radius: 22px;
+    }
+
+    .stage-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: end;
+      margin-bottom: 14px;
+    }
+
+    .stage-title h2 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: -.02em;
+    }
+
+    .stage-title p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .stage {
+      position: relative;
+      height: var(--stage-h);
+      border-radius: 22px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.58), rgba(255,255,255,.35)),
+        repeating-linear-gradient(180deg, transparent 0 31px, rgba(0,0,0,.022) 31px 32px),
+        #f7f1e5;
+      border: 1px solid #d8cfbf;
+      overflow: hidden;
+    }
+
+    .stage-caption {
+      position: absolute;
+      top: 16px;
+      left: 26px;
+      right: 26px;
+      display: grid;
+      grid-template-columns: 140px 1fr 210px;
+      gap: 18px;
+      align-items: start;
+      z-index: 3;
+    }
+
+    .cap-block {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .cap-text {
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      line-height: 1.1;
+    }
+
+    .tracks {
+      position: absolute;
+      inset: 70px 22px 18px;
+      display: grid;
+      grid-template-columns: 140px 1fr 220px;
+      gap: 18px;
+      align-items: stretch;
+      z-index: 1;
+    }
+
+    .track {
+      position: relative;
+      min-width: 0;
+    }
+
+    .fiber-scale,
+    .fat-scale,
+    .points-scale {
+      position: absolute;
+      inset: 0;
+    }
+
+    .track-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: rgba(0,0,0,.08);
+    }
+
+    .fiber-mark {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 0;
+    }
+
+    .fiber-mark .tick {
+      position: absolute;
+      right: 18px;
+      width: 26px;
+      border-top: 2px solid #8a8277;
+      top: 0;
+    }
+
+    .fiber-mark .label {
+      position: absolute;
+      right: 52px;
+      transform: translateY(-50%);
+      font-size: 24px;
+      font-weight: 700;
+      color: #5d5850;
+    }
+
+    .fiber-mark.active .label {
+      color: var(--blue);
+    }
+
+    .calorie-sleeve {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      top: 0;
+      bottom: 0;
+      width: min(165px, 62%);
+      background: rgba(255,255,255,.76);
+      border: 1px solid #cabfae;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.55);
+    }
+
+    .calorie-strip {
+      position: absolute;
+      left: 0;
+      right: 0;
+      will-change: transform;
+    }
+
+    .cal-mark {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 0;
+    }
+
+    .cal-mark .tick {
+      position: absolute;
+      left: 18px;
+      width: 28px;
+      border-top: 2px solid #6d665d;
+      top: 0;
+    }
+
+    .cal-mark .label {
+      position: absolute;
+      left: 56px;
+      transform: translateY(-50%);
+      font-size: 26px;
+      font-weight: 700;
+      color: #2f2f2f;
+      letter-spacing: -.02em;
+    }
+
+    .cal-highlight {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      height: 42px;
+      transform: translateY(-50%);
+      border-radius: 12px;
+      background: rgba(217,138,23,.13);
+      outline: 2px solid rgba(217,138,23,.46);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .align-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 3px;
+      transform: translateY(-50%);
+      background: linear-gradient(90deg, rgba(24,73,183,.18), rgba(24,73,183,.75), rgba(24,73,183,.18));
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .fat-mark,
+    .point-row {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 0;
+    }
+
+    .fat-mark .tick {
+      position: absolute;
+      left: 0;
+      width: 34px;
+      border-top: 2px solid #7f776e;
+      top: 0;
+    }
+
+    .fat-mark .label {
+      position: absolute;
+      left: 44px;
+      transform: translateY(-50%);
+      font-size: 22px;
+      color: #5d5850;
+      font-weight: 700;
+    }
+
+    .fat-mark.minor .tick { width: 20px; opacity: .55; }
+    .fat-mark.minor .label { display: none; }
+
+    .point-window {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 124px;
+      background: rgba(255,255,255,.88);
+      border: 1px solid #cdbfa9;
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    .point-window::before {
+      content: "Points";
+      position: absolute;
+      top: 12px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      font-size: 12px;
+      color: var(--muted);
+      z-index: 2;
+      font-weight: 700;
+    }
+
+    .points-scale {
+      top: 42px;
+      bottom: 10px;
+      left: 10px;
+      right: 10px;
+    }
+
+    .point-row {
+      height: 22px;
+      transform: translateY(-50%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+      color: #343434;
+      letter-spacing: -.02em;
+    }
+
+    .point-row:nth-child(odd) {
+      background: rgba(0,0,0,.03);
+    }
+
+    .active-fat {
+      position: absolute;
+      left: -8px;
+      right: -8px;
+      height: 38px;
+      transform: translateY(-50%);
+      background: rgba(30,138,73,.12);
+      border: 2px solid rgba(30,138,73,.48);
+      border-radius: 12px;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .current-point {
+      position: absolute;
+      right: 12px;
+      top: 58px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      border: 1px solid #d4c8b7;
+      border-radius: 999px;
+      padding: 10px 14px;
+      z-index: 4;
+      box-shadow: 0 6px 18px rgba(0,0,0,.08);
+      font-weight: 700;
+    }
+
+    .current-point .bubble {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      background: #222;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .footer-note {
+      margin-top: 12px;
+      padding: 0 4px;
+      color: #5b5b5b;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid #cfc2b0;
+      background: #fff;
+      color: #222;
+      border-radius: 999px;
+      padding: 11px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover { background: #f9f4ea; }
+
+    .disclaimer {
+      padding: 0 22px 22px;
+      font-size: 12px;
+      color: #6b6b6b;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 1040px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      .wrap { padding: 12px 8px 20px; }
+      .header { padding: 18px 16px 12px; }
+      .grid { padding: 12px; gap: 14px; }
+      .panel, .stage-panel { border-radius: 18px; }
+      .stage-caption,
+      .tracks {
+        grid-template-columns: 92px 1fr 156px;
+        gap: 10px;
+      }
+      .cap-text { font-size: 12px; }
+      .fiber-mark .label,
+      .cal-mark .label,
+      .fat-mark .label { font-size: 18px; }
+      .point-window { width: 92px; }
+      .point-row { font-size: 16px; }
+      .current-point { top: 50px; right: 8px; padding: 8px 10px; font-size: 12px; }
+      .current-point .bubble { width: 28px; height: 28px; font-size: 16px; }
+    }
+
+    @media print {
+      body { background: #fff; }
+      .wrap { max-width: none; padding: 0; }
+      .app { box-shadow: none; border: none; }
+      .grid { grid-template-columns: 1fr; }
+      .tools { display: none; }
+      .stage { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="app">
+      <div class="header">
+        <div class="eyebrow">Offline browser tool</div>
+        <h1>Legacy‑Style Points Finder</h1>
+        <p class="sub">A functional, slider-inspired calculator based on the older calories + total fat + dietary fiber method shown in your sample images. It works like a digital version of the paper slider: set fiber, calories, and fat, then read the points.</p>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <h2>Enter the nutrition info</h2>
+
+          <div class="control">
+            <div class="label-row">
+              <div class="control-title"><span class="num-pill blue">1</span> Dietary Fiber (grams)</div>
+            </div>
+            <div class="input-row">
+              <input id="fiberRange" type="range" min="0" max="10" step="0.1" value="2" />
+              <input id="fiberInput" type="number" min="0" max="99" step="0.1" value="2" />
+            </div>
+            <small>For the formula, fiber is rounded to the nearest whole number and capped at 4, just like the old slider.</small>
+          </div>
+
+          <div class="control">
+            <div class="label-row">
+              <div class="control-title"><span class="num-pill orange">2</span> Calories</div>
+            </div>
+            <div class="input-row">
+              <input id="calRange" type="range" min="0" max="600" step="1" value="220" />
+              <input id="calInput" type="number" min="0" max="5000" step="1" value="220" />
+            </div>
+            <small>This digital version works above 300 calories too, so you do not need to flip anything over.</small>
+          </div>
+
+          <div class="control">
+            <div class="label-row">
+              <div class="control-title"><span class="num-pill green">3</span> Total Fat (grams)</div>
+            </div>
+            <div class="input-row">
+              <input id="fatRange" type="range" min="0" max="40" step="0.1" value="3" />
+              <input id="fatInput" type="number" min="0" max="999" step="0.1" value="3" />
+            </div>
+            <small>Fat is rounded to the nearest whole number before calculating points.</small>
+          </div>
+
+          <div class="result-card">
+            <div class="result-title">Result</div>
+            <div class="result-value">
+              <div id="pointsBig" class="big">4</div>
+              <div class="word">points</div>
+            </div>
+            <div class="formula" id="formulaText"></div>
+
+            <div class="mini-grid">
+              <div class="mini">
+                <div class="k">Fiber used</div>
+                <div id="fiberUsed" class="v">2</div>
+              </div>
+              <div class="mini">
+                <div class="k">Fat used</div>
+                <div id="fatUsed" class="v">3</div>
+              </div>
+            </div>
+
+            <div class="notes">
+              Round fat and fiber to the nearest whole number. If fat or fiber is missing, use 0. Fiber above 4 still counts as 4 for this legacy method.
+            </div>
+          </div>
+
+          <div class="examples">
+            <div class="example"><strong>Example from your sample:</strong> 2g fiber, 220 calories, 3g fat = <strong>4 points</strong>.</div>
+            <div class="example"><strong>Second sample:</strong> 4g fiber, 200 calories, 5g fat = <strong>4 points</strong>.</div>
+          </div>
+
+          <div class="tools">
+            <button id="resetBtn" type="button">Reset to sample</button>
+            <button id="printBtn" type="button">Print / Save as PDF</button>
+          </div>
+        </div>
+
+        <div class="stage-panel">
+          <div class="stage-title">
+            <div>
+              <h2>Slider view</h2>
+              <p>This recreates the feel of the original tool: the calorie strip aligns to the selected fiber line, and the fat column reads across to the points result.</p>
+            </div>
+          </div>
+
+          <div class="stage">
+            <div class="stage-caption">
+              <div class="cap-block">
+                <span class="num-pill blue">1</span>
+                <div class="cap-text">Dietary<br>Fiber<br>Grams</div>
+              </div>
+              <div class="cap-block" style="justify-self:center;">
+                <span class="num-pill orange">2</span>
+                <div class="cap-text">Calories</div>
+              </div>
+              <div class="cap-block" style="justify-self:end;">
+                <span class="num-pill green">3</span>
+                <div class="cap-text">Total Fat<br>Grams</div>
+              </div>
+            </div>
+
+            <div class="current-point">
+              <span class="bubble" id="currentPointBubble">4</span>
+              <span>Current points</span>
+            </div>
+
+            <div class="tracks">
+              <div class="track">
+                <div id="fiberScale" class="fiber-scale"></div>
+              </div>
+
+              <div class="track">
+                <div class="align-line" id="alignLine"></div>
+                <div class="calorie-sleeve">
+                  <div class="cal-highlight" id="calHighlight"></div>
+                  <div class="calorie-strip" id="calorieStrip"></div>
+                </div>
+              </div>
+
+              <div class="track">
+                <div id="fatScale" class="fat-scale"></div>
+                <div class="point-window">
+                  <div id="pointsScale" class="points-scale"></div>
+                  <div id="activeFat" class="active-fat"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="footer-note">
+            Tip: the visual ruler uses the rounded fat and fiber values, so what you see matches the points number being calculated.
+          </div>
+        </div>
+      </div>
+
+      <div class="disclaimer">
+        Personal-use replica inspired by the legacy paper slider you uploaded. This page is not affiliated with or endorsed by WeightWatchers / WW.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const stageHeight = 560;
+    const stageTop = 42;
+    const stageBottom = 38;
+    const usableStage = stageHeight - stageTop - stageBottom;
+
+    const fiberRange = document.getElementById('fiberRange');
+    const fiberInput = document.getElementById('fiberInput');
+    const calRange = document.getElementById('calRange');
+    const calInput = document.getElementById('calInput');
+    const fatRange = document.getElementById('fatRange');
+    const fatInput = document.getElementById('fatInput');
+
+    const fiberScale = document.getElementById('fiberScale');
+    const calorieStrip = document.getElementById('calorieStrip');
+    const fatScale = document.getElementById('fatScale');
+    const pointsScale = document.getElementById('pointsScale');
+    const alignLine = document.getElementById('alignLine');
+    const calHighlight = document.getElementById('calHighlight');
+    const activeFat = document.getElementById('activeFat');
+
+    const pointsBig = document.getElementById('pointsBig');
+    const currentPointBubble = document.getElementById('currentPointBubble');
+    const fiberUsed = document.getElementById('fiberUsed');
+    const fatUsed = document.getElementById('fatUsed');
+    const formulaText = document.getElementById('formulaText');
+
+    function clamp(n, min, max) {
+      return Math.max(min, Math.min(max, n));
+    }
+
+    function roundWhole(n) {
+      return Math.round(Number(n) || 0);
+    }
+
+    function syncInputs(rangeEl, inputEl, min, max) {
+      const value = clamp(Number(inputEl.value || 0), min, max);
+      inputEl.value = value;
+      rangeEl.value = clamp(value, Number(rangeEl.min), Number(rangeEl.max));
+    }
+
+    function syncRange(rangeEl, inputEl) {
+      inputEl.value = rangeEl.value;
+    }
+
+    function yForFiber(v) {
+      const positions = [0.20, 0.36, 0.52, 0.68, 0.84];
+      return stageTop + usableStage * positions[clamp(v, 0, 4)];
+    }
+
+    function yForFat(v) {
+      const maxFat = 20;
+      const safe = clamp(v, 0, maxFat);
+      const ratio = safe / maxFat;
+      return stageTop + 14 + usableStage * ratio;
+    }
+
+    function yForCalOnStrip(cal) {
+      const maxCal = 600;
+      return 30 + (clamp(cal, 0, maxCal) / maxCal) * (usableStage + 90);
+    }
+
+    function calcPoints(calories, fat, fiber) {
+      const roundedFat = Math.max(0, roundWhole(fat));
+      const roundedFiber = clamp(roundWhole(fiber), 0, 4);
+      const raw = (Number(calories) / 50) + (roundedFat / 12) - (roundedFiber / 5);
+      const points = Math.max(0, Math.round(raw));
+      return { points, raw, roundedFat, roundedFiber };
+    }
+
+    function buildStaticScales() {
+      fiberScale.innerHTML = '';
+      [0,1,2,3,4].forEach((v) => {
+        const mark = document.createElement('div');
+        mark.className = 'fiber-mark';
+        mark.dataset.value = v;
+        mark.style.top = `${yForFiber(v)}px`;
+        mark.innerHTML = `<div class="tick"></div><div class="label">${v === 4 ? '4+' : v}</div>`;
+        fiberScale.appendChild(mark);
+      });
+
+      calorieStrip.innerHTML = '';
+      for (let c = 0; c <= 600; c += 10) {
+        const mark = document.createElement('div');
+        mark.className = 'cal-mark';
+        mark.dataset.value = c;
+        mark.style.top = `${yForCalOnStrip(c)}px`;
+        const showLabel = c % 20 === 0;
+        mark.innerHTML = `<div class="tick" style="width:${showLabel ? 30 : 18}px; opacity:${showLabel ? 1 : .55}"></div>${showLabel ? `<div class="label">${c}</div>` : ''}`;
+        calorieStrip.appendChild(mark);
+      }
+
+      fatScale.innerHTML = '';
+      for (let f = 0; f <= 20; f += 1) {
+        const mark = document.createElement('div');
+        const major = f % 2 === 0;
+        mark.className = `fat-mark ${major ? 'major' : 'minor'}`;
+        mark.dataset.value = f;
+        mark.style.top = `${yForFat(f)}px`;
+        mark.innerHTML = `<div class="tick"></div>${major ? `<div class="label">${f}</div>` : ''}`;
+        fatScale.appendChild(mark);
+      }
+    }
+
+    function render() {
+      const fiber = clamp(Number(fiberInput.value || 0), 0, 99);
+      const calories = clamp(Number(calInput.value || 0), 0, 5000);
+      const fat = clamp(Number(fatInput.value || 0), 0, 999);
+
+      fiberRange.value = clamp(fiber, Number(fiberRange.min), Number(fiberRange.max));
+      calRange.value = clamp(calories, Number(calRange.min), Number(calRange.max));
+      fatRange.value = clamp(fat, Number(fatRange.min), Number(fatRange.max));
+
+      const result = calcPoints(calories, fat, fiber);
+
+      pointsBig.textContent = result.points;
+      currentPointBubble.textContent = result.points;
+      fiberUsed.textContent = result.roundedFiber;
+      fatUsed.textContent = result.roundedFat;
+
+      formulaText.textContent = `points = round((${Math.round(calories)}/50) + (${result.roundedFat}/12) - (${result.roundedFiber}/5)) = ${result.raw.toFixed(2)} → ${result.points}`;
+
+      const fiberY = yForFiber(result.roundedFiber);
+      alignLine.style.top = `${fiberY}px`;
+      calHighlight.style.top = `${fiberY}px`;
+
+      const stripSelectedY = yForCalOnStrip(clamp(calories, 0, 600));
+      const translate = fiberY - stripSelectedY;
+      calorieStrip.style.transform = `translateY(${translate}px)`;
+
+      document.querySelectorAll('.fiber-mark').forEach(mark => {
+        mark.classList.toggle('active', Number(mark.dataset.value) === result.roundedFiber);
+      });
+
+      const fatY = yForFat(clamp(result.roundedFat, 0, 20));
+      activeFat.style.top = `${fatY}px`;
+
+      pointsScale.innerHTML = '';
+      for (let f = 0; f <= 20; f += 1) {
+        const row = document.createElement('div');
+        row.className = 'point-row';
+        const rowResult = calcPoints(calories, f, fiber).points;
+        row.style.top = `${yForFat(f) - 42}px`;
+        row.textContent = rowResult;
+        if (f === clamp(result.roundedFat, 0, 20)) {
+          row.style.background = 'rgba(30,138,73,.16)';
+          row.style.outline = '2px solid rgba(30,138,73,.45)';
+        }
+        pointsScale.appendChild(row);
+      }
+    }
+
+    buildStaticScales();
+
+    fiberRange.addEventListener('input', () => { syncRange(fiberRange, fiberInput); render(); });
+    calRange.addEventListener('input', () => { syncRange(calRange, calInput); render(); });
+    fatRange.addEventListener('input', () => { syncRange(fatRange, fatInput); render(); });
+
+    fiberInput.addEventListener('input', render);
+    calInput.addEventListener('input', render);
+    fatInput.addEventListener('input', render);
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      fiberInput.value = 2;
+      calInput.value = 220;
+      fatInput.value = 3;
+      render();
+    });
+
+    document.getElementById('printBtn').addEventListener('click', () => window.print());
+
+    render();
+  </script>
+</body>
+</html>
